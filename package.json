@@ -1,10 +1,10 @@
 {
   "private": true,
-  "name": "@arkecosystem/name",
-  "description": "Provides ... for Ark Core",
-  "version": "0.0.1",
+  "name": "@nosplatform/stake-transactions",
+  "description": "Provides stake transactions for Ark Core",
+  "version": "0.0.2",
   "contributors": [
-    "Your Name <your@domain.io>"
+    "Dean van Dugteren <dean@nos.io>"
   ],
   "license": "MIT",
   "main": "dist/index.js",
