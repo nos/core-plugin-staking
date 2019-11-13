@@ -1,18 +1,18 @@
-import { Managers, Transactions, Utils } from "@nosplatform/crypto";
+import { Managers, Transactions, Utils } from "@arkecosystem/crypto";
 import ByteBuffer from "bytebuffer";
 import { IStakeCreateAsset } from "../interfaces";
+import { StakeTransactionGroup, StakeTransactionType, StakeTransactionStaticFees } from "../enums";
 
 const { schemas } = Transactions;
 
-const STAKE_TYPE = 100;
-
 export class StakeCreateTransaction extends Transactions.Transaction {
-    public static type = STAKE_TYPE;
+    public static typeGroup: number = StakeTransactionGroup;
+    public static type: number = StakeTransactionType.StakeCreate;
+    public static key: string = "stakeCreate";
 
     public static getSchema(): Transactions.schemas.TransactionSchema {
         const configManager = Managers.configManager;
         const milestone = configManager.getMilestone();
-
         const stakeLevels = [];
         for (const duration of Object.keys(milestone.stakeLevels)) {
             stakeLevels.push(Number(duration));
@@ -20,9 +20,10 @@ export class StakeCreateTransaction extends Transactions.Transaction {
 
         return schemas.extend(schemas.transactionBaseSchema, {
             $id: "stakeCreate",
-            required: ["asset"],
+            required: ["asset", "typeGroup"],
             properties: {
-                type: { transactionType: STAKE_TYPE },
+                type: { transactionType: this.type },
+                typeGroup: { const: this.typeGroup },
                 amount: { bignumber: { minimum: 0, maximum: 0 } },
                 asset: {
                     type: "object",
@@ -52,6 +53,8 @@ export class StakeCreateTransaction extends Transactions.Transaction {
             },
         });
     }
+
+    protected static defaultStaticFee: Utils.BigNumber = Utils.BigNumber.make(StakeTransactionStaticFees.StakeCreate);
 
     public serialize(): ByteBuffer {
         // @ts-ignore

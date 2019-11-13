@@ -2,7 +2,7 @@ import { Managers, Utils } from "@arkecosystem/crypto";
 import { IStakeObject, IStakeCreateAsset } from "../interfaces";
 
 class VoteWeight {
-    public static stakeObject(s: IStakeCreateAsset): any {
+    public static stakeObject(s: IStakeCreateAsset, transactionId: string): any {
         const configManager = Managers.configManager;
         const milestone = configManager.getMilestone();
         const multiplier: number = milestone.stakeLevels[s.duration];
@@ -12,6 +12,7 @@ class VoteWeight {
         const timestamp = s.timestamp;
 
         const o: IStakeObject = {
+            transactionId,
             timestamp,
             amount,
             duration: s.duration,
