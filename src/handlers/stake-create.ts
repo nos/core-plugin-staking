@@ -1,18 +1,19 @@
-import { app } from "@arkecosystem/core-container";
-import { Database, State, TransactionPool } from "@arkecosystem/core-interfaces";
-import { Interfaces, Managers, Transactions, Utils, Constants } from "@arkecosystem/crypto";
-import { Handlers, TransactionReader } from "@arkecosystem/core-transactions";
-import { IStakeCreateAsset, IStakeArray, IStakeObject } from "../interfaces";
-import { VoteWeight } from "../helpers";
-import { StakeTimestampError, StakeAlreadyExistsError, StakeNotIntegerError, NotEnoughBalanceError, StakeDurationError } from "../errors";
-import { StakeCreateTransaction } from "../transactions/stake-create";
-import { ExpireHelper } from "../helpers/expire";
-import { roundCalculator } from "@arkecosystem/core-utils";
+import { app } from '@arkecosystem/core-container';
+import { Database, State, TransactionPool, EventEmitter } from '@arkecosystem/core-interfaces';
+import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
+import { roundCalculator } from '@arkecosystem/core-utils';
+import { Constants, Interfaces, Managers, Transactions, Utils } from '@arkecosystem/crypto';
+import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
 
+import {
+    NotEnoughBalanceError, StakeAlreadyExistsError, StakeDurationError, StakeNotIntegerError,
+    StakeTimestampError
+} from '../errors';
+import { ExpireHelper, VoteWeight } from '../helpers';
 
 export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     public getConstructor(): Transactions.TransactionConstructor {
-        return StakeCreateTransaction;
+        return StakeTransactions.StakeCreateTransaction;
     }
 
     public dependencies(): ReadonlyArray<Handlers.TransactionHandlerConstructor> {
@@ -30,21 +31,20 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     public async bootstrap(connection: Database.IConnection, walletManager: State.IWalletManager): Promise<void> {
         const reader: TransactionReader = await TransactionReader.create(connection, this.getConstructor());
         const databaseService = app.resolvePlugin<Database.IDatabaseService>("database");
-        const lastBlock: Interfaces.IBlock = await app
-            .resolvePlugin<State.IStateService>("state")
-            .getStore()
-            .getLastBlock();
+        const stateService = app.resolvePlugin<State.IStateService>("state");
+        const lastBlock: Interfaces.IBlock = stateService.getStore().getLastBlock();
         const roundHeight: number = roundCalculator.calculateRound(lastBlock.data.height).roundHeight;
         const roundBlock: Interfaces.IBlockData = await databaseService.blocksBusinessRepository.findByHeight(
             roundHeight,
         );
-        //TODO: get milestone belonging to transaction block height
+
+        // TODO: get milestone belonging to transaction block height
         while (reader.hasNext()) {
             const transactions = await reader.read();
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
-                const stakeObject: IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
-                const stakes = wallet.getAttribute<IStakeArray>("stakes");
+                const stakeObject: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
+                const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes");
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
                     stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2).toFixed());
                     stakeObject.halved = true;
@@ -53,7 +53,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                     ...stakes,
                     [transaction.id]: stakeObject
                 });
-                wallet.setAttribute<IStakeArray>("stakes", stakes);
+                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stakeObject.weight);
                 wallet.setAttribute("stakeWeight", newWeight);
                 ExpireHelper.storeExpiry(stakeObject, wallet, transaction.id);
@@ -67,14 +67,14 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         wallet: State.IWallet,
         databaseWalletManager: State.IWalletManager,
     ): Promise<void> {
-        const stake: IStakeCreateAsset = transaction.data.asset.stakeCreate;
+        const stake: StakeInterfaces.IStakeCreateAsset = transaction.data.asset.stakeCreate;
         const lastBlock: Interfaces.IBlock = app
             .resolvePlugin<State.IStateService>("state")
             .getStore()
             .getLastBlock();
 
         const { data }: Interfaces.ITransaction = transaction;
-        const o: IStakeObject = VoteWeight.stakeObject(data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(data.asset.stakeCreate, transaction.id);
 
         const timestampDiff = stake.timestamp - lastBlock.data.timestamp;
         if (
@@ -118,16 +118,20 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         return true;
     }
 
+    public emitEvents(transaction: Interfaces.ITransaction, emitter: EventEmitter.EventEmitter): void {
+        emitter.emit("stake.created", transaction.data);
+    }
+
     public async applyToSender(
         transaction: Interfaces.ITransaction,
         walletManager: State.IWalletManager,
     ): Promise<void> {
         await super.applyToSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
-        const o: IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.minus(o.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(o.weight);
-        const stakes = sender.getAttribute<IStakeArray>("stakes");
+        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes");
 
         Object.assign(stakes, {
             ...stakes,
@@ -149,10 +153,10 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     ): Promise<void> {
         await super.revertForSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
-        const o: IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.plus(o.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(o.weight);
-        const stakes = sender.getAttribute<IStakeArray>("stakes");
+        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes");
 
         Object.assign(stakes, {
             ...stakes,

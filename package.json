@@ -28,9 +28,10 @@
     "updates": "../../node_modules/npm-check-updates/bin/npm-check-updates -a"
   },
   "dependencies": {
-    "@arkecosystem/core-interfaces": "^2.6.0-next.2",
-    "@arkecosystem/crypto": "^2.6.0-next.2",
-    "@arkecosystem/core-transactions": "^2.6.0-next.2",
+    "@arkecosystem/core-interfaces": "^2.6.0-next.6",
+    "@arkecosystem/crypto": "^2.6.0-next.6",
+    "@arkecosystem/core-transactions": "^2.6.0-next.6",
+    "@nosplatform/stake-transactions-crypto": "^0.0.1",
     "@nosplatform/storage": "^0.0.2"
   },
   "devDependencies": {

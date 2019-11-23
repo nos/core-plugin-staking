@@ -1,9 +1,10 @@
-import { app } from "@arkecosystem/core-container";
-import { Database, EventEmitter, State, TransactionPool } from "@arkecosystem/core-interfaces";
-import { Interfaces, Utils } from "@arkecosystem/crypto";
-import { IStakeObject, IStakeArray } from "../interfaces";
-import { Stake } from "@nosplatform/storage";
-import { LessThan } from "typeorm";
+import { LessThan } from 'typeorm';
+
+import { app } from '@arkecosystem/core-container';
+import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
+import { Interfaces, Utils } from '@arkecosystem/crypto';
+import { Interfaces as StakeInterfaces } from '@nosplatform/stake-transactions-crypto';
+import { Stake } from '@nosplatform/storage';
 
 export interface IExpirationObject {
     publicKey: string;
@@ -18,8 +19,8 @@ export class ExpireHelper {
         block: Interfaces.IBlockData,
     ): Promise<void> {
 
-        const stakes: IStakeArray = wallet.getAttribute("stakes");
-        const stake: IStakeObject = stakes[stakeKey];
+        const stakes: StakeInterfaces.IStakeArray = wallet.getAttribute("stakes");
+        const stake: StakeInterfaces.IStakeObject = stakes[stakeKey];
 
         if (!stake.halved && !stake.redeemed && block.timestamp > stake.redeemableTimestamp) {
             const databaseService: Database.IDatabaseService = app.resolvePlugin<Database.IDatabaseService>("database");
@@ -79,7 +80,7 @@ export class ExpireHelper {
     }
 
     public static async storeExpiry(
-        stake: IStakeObject,
+        stake: StakeInterfaces.IStakeObject,
         wallet: State.IWallet,
         stakeKey: string,
     ): Promise<void> {
@@ -98,7 +99,7 @@ export class ExpireHelper {
     }
 
     public static async removeExpiry(
-        stake: IStakeObject,
+        stake: StakeInterfaces.IStakeObject,
         wallet: State.IWallet,
         stakeKey: string,
     ): Promise<void> {

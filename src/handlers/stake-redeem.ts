@@ -1,15 +1,18 @@
-import { Database, State, TransactionPool } from "@arkecosystem/core-interfaces";
-import { Interfaces, Transactions, Utils } from "@arkecosystem/crypto";
-import { Handlers, TransactionReader } from "@arkecosystem/core-transactions";
-import { IStakeRedeemAsset, IStakeArray, IStakeObject } from "../interfaces";
-import { WalletHasNoStakeError, StakeNotFoundError, StakeAlreadyRedeemedError, StakeNotYetRedeemableError } from "../errors";
-import { StakeCreateTransactionHandler } from "./stake-create";
-import { StakeRedeemTransaction } from "../transactions/stake-redeem";
+import { Database, State, TransactionPool, EventEmitter } from '@arkecosystem/core-interfaces';
+import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
+import { Interfaces, Transactions, Utils } from '@arkecosystem/crypto';
+import {
+    Interfaces as StakeInterfaces, Transactions as StakeTransactions
+} from '@nosplatform/stake-transactions-crypto';
 
+import {
+    StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError
+} from '../errors';
+import { StakeCreateTransactionHandler } from './stake-create';
 
 export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
     public getConstructor(): Transactions.TransactionConstructor {
-        return StakeRedeemTransaction;
+        return StakeTransactions.StakeRedeemTransaction;
     }
 
     public dependencies(): ReadonlyArray<Handlers.TransactionHandlerConstructor> {
@@ -26,16 +29,16 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
 
     public async bootstrap(connection: Database.IConnection, walletManager: State.IWalletManager): Promise<void> {
         const reader: TransactionReader = await TransactionReader.create(connection, this.getConstructor());
-        //TODO: get milestone belonging to transaction block height
+        // TODO: get milestone belonging to transaction block height
         while (reader.hasNext()) {
             const transactions = await reader.read();
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
-                const s: IStakeRedeemAsset = transaction.asset.stakeRedeem;
+                const s: StakeInterfaces.IStakeRedeemAsset = transaction.asset.stakeRedeem;
                 const txId = s.txId;
                 // Refund stake
                 const stakes = wallet.getAttribute("stakes", {});
-                const stake: IStakeObject = stakes[txId];
+                const stake: StakeInterfaces.IStakeObject = stakes[txId];
                 const newBalance = wallet.balance.plus(stake.amount);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(stake.weight);
 
@@ -48,9 +51,8 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 });
 
                 wallet.balance = newBalance;
-                wallet.setAttribute<IStakeArray>("stakes", stakes);
+                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
                 wallet.setAttribute<Utils.BigNumber>("stakeWeight", newWeight);
-
                 walletManager.reindex(wallet);
             }
         }
@@ -61,10 +63,9 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         wallet: State.IWallet,
         databaseWalletManager: State.IWalletManager,
     ): Promise<void> {
-        let stakeArray: IStakeArray;
         const sender = databaseWalletManager.findByPublicKey(wallet.publicKey);
 
-        const stakes = sender.getAttribute("stakes", {});
+        const stakes: StakeInterfaces.IStakeArray = sender.getAttribute("stakes", {});
 
         // Get wallet stake if it exists
         if (stakes === {}) {
@@ -74,18 +75,18 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         const { data }: Interfaces.ITransaction = transaction;
         const txId = data.asset.stakeRedeem.txId;
 
-        if (!(txId in stakeArray)) {
+        if (!(txId in stakes)) {
             throw new StakeNotFoundError();
         }
 
-        if (stakeArray[txId].redeemed) {
+        if (stakes[txId].redeemed) {
             throw new StakeAlreadyRedeemedError();
         }
 
         // TODO: Get transaction's block round timestamp instead of transaction timestamp.
         if (
-            (!transaction.timestamp && !stakeArray[txId].halved) ||
-            (transaction.timestamp && transaction.timestamp < stakeArray[txId].redeemableTimestamp)
+            (!transaction.timestamp && !stakes[txId].halved) ||
+            (transaction.timestamp && transaction.timestamp < stakes[txId].redeemableTimestamp)
         ) {
             throw new StakeNotYetRedeemableError();
         }
@@ -104,12 +105,16 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         return true;
     }
 
+    public emitEvents(transaction: Interfaces.ITransaction, emitter: EventEmitter.EventEmitter): void {
+        emitter.emit("stake.redeemed", transaction.data);
+    }
+
     public async applyToSender(
         transaction: Interfaces.ITransaction,
         walletManager: State.IWalletManager,
     ): Promise<void> {
         super.applyToSender(transaction, walletManager);
-        //TODO: get milestone belonging to transaction block height
+        // TODO: get milestone belonging to transaction block height
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
         const t = transaction.data;
         const txId = t.asset.stakeRedeem.txId;
