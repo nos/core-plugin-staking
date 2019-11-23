@@ -44,7 +44,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
                 const stakeObject: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
-                const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes");
+                const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
                     stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2).toFixed());
                     stakeObject.halved = true;
@@ -84,12 +84,12 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             throw new StakeTimestampError();
         }
 
-        if (transaction.id in wallet.getAttribute("stakes")) {
+        if (transaction.id in wallet.getAttribute("stakes", {})) {
             throw new StakeAlreadyExistsError();
         }
 
         // Amount can only be in increments of 1 NOS
-        if (o.amount.dividedBy(Constants.ARKTOSHI).toString().includes(".")) {
+        if (!o.amount.toString().endsWith(Constants.ARKTOSHI.toString().substr(1))) {
             throw new StakeNotIntegerError();
         }
 
@@ -131,7 +131,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.minus(o.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(o.weight);
-        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes");
+        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
 
         Object.assign(stakes, {
             ...stakes,
@@ -156,7 +156,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.plus(o.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(o.weight);
-        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes");
+        const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
 
         Object.assign(stakes, {
             ...stakes,
@@ -166,7 +166,6 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", stakes);
         sender.balance = newBalance;
-
         walletManager.reindex(sender);
     }
 

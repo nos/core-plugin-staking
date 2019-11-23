@@ -35,7 +35,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
                 const s: StakeInterfaces.IStakeRedeemAsset = transaction.asset.stakeRedeem;
-                const txId = s.txId;
+                const txId = s.id;
                 // Refund stake
                 const stakes = wallet.getAttribute("stakes", {});
                 const stake: StakeInterfaces.IStakeObject = stakes[txId];
@@ -73,7 +73,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         }
 
         const { data }: Interfaces.ITransaction = transaction;
-        const txId = data.asset.stakeRedeem.txId;
+        const txId = data.asset.stakeRedeem.id;
 
         if (!(txId in stakes)) {
             throw new StakeNotFoundError();
@@ -117,7 +117,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         // TODO: get milestone belonging to transaction block height
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
         const t = transaction.data;
-        const txId = t.asset.stakeRedeem.txId;
+        const txId = t.asset.stakeRedeem.id;
         const stakes = sender.getAttribute("stakes", {});
         const stake = stakes[txId];
         // Refund stake
@@ -145,7 +145,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         await super.revertForSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
         const t = transaction.data;
-        const txId = t.asset.stakeRedeem.txId;
+        const txId = t.asset.stakeRedeem.id;
         const stakes = sender.getAttribute("stakes", {});
         const stake = stakes[txId];
         // Revert refund stake

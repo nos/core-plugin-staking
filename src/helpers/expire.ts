@@ -116,6 +116,7 @@ export class ExpireHelper {
         const [expirations, expirationsCount] = await Stake.findAndCount({
             where: { redeemableTimestamp: LessThan(lastTime) },
         });
+        console.log(expirations);
         if (expirationsCount > 0) {
             app.resolvePlugin("logger").info("Processing stake expirations.");
             for (const expiration of expirations) {
