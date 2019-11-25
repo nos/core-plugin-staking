@@ -1,4 +1,4 @@
-import { LessThan } from 'typeorm';
+import { LessThanOrEqual } from 'typeorm';
 
 import { app } from '@arkecosystem/core-container';
 import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
@@ -70,6 +70,14 @@ export class ExpireHelper {
                 poolDelegate.setAttribute("voteBalance", poolDelegate.getAttribute("voteBalance").plus(wallet.getAttribute("stakeWeight")));
             }
 
+
+            const walletManager1 = databaseService.walletManager;
+            const walletManager2 = poolService.walletManager;
+            walletManager1.reindex(delegate);
+            walletManager1.reindex(wallet);
+            walletManager2.reindex(walletManager2);
+            walletManager2.reindex(wallet);
+
             this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block });
         }
 
@@ -77,6 +85,7 @@ export class ExpireHelper {
         if (!(block.timestamp <= stake.redeemableTimestamp)) {
             this.removeExpiry(stake, wallet, stakeKey);
         }
+
     }
 
     public static async storeExpiry(
@@ -114,13 +123,14 @@ export class ExpireHelper {
         const databaseService: Database.IDatabaseService = app.resolvePlugin<Database.IDatabaseService>("database");
         const lastTime = block.timestamp;
         const [expirations, expirationsCount] = await Stake.findAndCount({
-            where: { redeemableTimestamp: LessThan(lastTime) },
+            where: { redeemableTimestamp: LessThanOrEqual(lastTime) },
         });
-        console.log(expirations);
         if (expirationsCount > 0) {
             app.resolvePlugin("logger").info("Processing stake expirations.");
             for (const expiration of expirations) {
+                console.log(expiration.address);
                 const wallet = databaseService.walletManager.findByAddress(expiration.address);
+                console.log(expiration.stakeKey);
                 if (
                     wallet.getAttribute("stakes")[expiration.stakeKey] !== undefined &&
                     wallet.getAttribute("stakes")[expiration.stakeKey].halved === false

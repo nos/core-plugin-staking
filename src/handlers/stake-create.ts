@@ -46,7 +46,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 const stakeObject: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
                 const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
-                    stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2).toFixed());
+                    stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2));
                     stakeObject.halved = true;
                 }
                 Object.assign(stakes, {
@@ -56,7 +56,6 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stakeObject.weight);
                 wallet.setAttribute("stakeWeight", newWeight);
-                ExpireHelper.storeExpiry(stakeObject, wallet, transaction.id);
                 walletManager.reindex(wallet);
             }
         }
@@ -142,7 +141,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         sender.setAttribute("stakes", stakes);
         sender.balance = newBalance;
 
-        ExpireHelper.storeExpiry(o, sender, transaction.id);
+        await ExpireHelper.storeExpiry(o, sender, transaction.id);
 
         walletManager.reindex(sender);
     }
@@ -166,6 +165,9 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", stakes);
         sender.balance = newBalance;
+
+        await ExpireHelper.removeExpiry(o, sender, transaction.id);
+
         walletManager.reindex(sender);
     }
 

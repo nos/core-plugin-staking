@@ -32,3 +32,5 @@ export const plugin: Container.IPluginDescriptor = {
     container.resolvePlugin<Logger.ILogger>("logger").info("Deregistering Stake Redeem Transaction");
     Handlers.Registry.deregisterTransactionHandler(StakeRedeemTransactionHandler);  }
 };
+
+export { StakeCreateTransactionHandler, StakeRedeemTransactionHandler };
