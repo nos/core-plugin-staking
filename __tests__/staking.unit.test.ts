@@ -29,7 +29,9 @@ import { StakeCreateTransactionHandler, StakeRedeemTransactionHandler } from '..
 
 beforeAll(async () => {
     const dbPath = path.resolve(__dirname, `../../storage/databases/unitnet.sqlite`);
-    fs.unlinkSync(dbPath);
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+    }
     await createConnection({
         type: "sqlite",
         database: dbPath,
@@ -300,7 +302,7 @@ describe("Staking Transactions", () => {
                 .plus(voter.getAttribute("stakeWeight")),
         );
         expect(voter.getAttribute("stakes")[stakeTransaction.id]).toEqual({
-            id: 'b5318f00902b3462f914c88d163879dd8b883b487eb5133b1abd0e1839129f0b',
+            id: stakeTransaction.id,
             amount: stakeAmount,
             duration: 7889400,
             weight: stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10),
