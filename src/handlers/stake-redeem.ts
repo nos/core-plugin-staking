@@ -1,13 +1,9 @@
-import { Database, State, TransactionPool, EventEmitter } from '@arkecosystem/core-interfaces';
+import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
 import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
 import { Interfaces, Transactions, Utils } from '@arkecosystem/crypto';
-import {
-    Interfaces as StakeInterfaces, Transactions as StakeTransactions
-} from '@nosplatform/stake-transactions-crypto';
+import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
 
-import {
-    StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError
-} from '../errors';
+import { StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError } from '../errors';
 import { StakeCreateTransactionHandler } from './stake-create';
 
 export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {

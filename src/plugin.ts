@@ -33,4 +33,4 @@ export const plugin: Container.IPluginDescriptor = {
     Handlers.Registry.deregisterTransactionHandler(StakeRedeemTransactionHandler);  }
 };
 
-export { StakeCreateTransactionHandler, StakeRedeemTransactionHandler };
+export { StakeCreateTransactionHandler, StakeRedeemTransactionHandler, StakeHelpers };

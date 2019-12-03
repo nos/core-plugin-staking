@@ -1,13 +1,16 @@
 import { app } from '@arkecosystem/core-container';
-import { Database, State, TransactionPool, EventEmitter } from '@arkecosystem/core-interfaces';
+import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
 import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
 import { roundCalculator } from '@arkecosystem/core-utils';
 import { Constants, Interfaces, Managers, Transactions, Utils } from '@arkecosystem/crypto';
 import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
 
 import {
-    NotEnoughBalanceError, StakeAlreadyExistsError, StakeDurationError, StakeNotIntegerError,
-    StakeTimestampError
+    NotEnoughBalanceError,
+    StakeAlreadyExistsError,
+    StakeDurationError,
+    StakeNotIntegerError,
+    StakeTimestampError,
 } from '../errors';
 import { ExpireHelper, VoteWeight } from '../helpers';
 
