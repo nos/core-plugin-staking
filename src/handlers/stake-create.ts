@@ -1,6 +1,6 @@
 import { app } from '@arkecosystem/core-container';
 import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
-import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
+import { Handlers, Interfaces as TransactionInterfaces, TransactionReader } from '@arkecosystem/core-transactions';
 import { roundCalculator } from '@arkecosystem/core-utils';
 import { Constants, Interfaces, Managers, Transactions, Utils } from '@arkecosystem/crypto';
 import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
@@ -29,6 +29,11 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
 
     public async isActivated(): Promise<boolean> {
         return true;
+    }
+
+    public dynamicFee(context: TransactionInterfaces.IDynamicFeeContext): Utils.BigNumber {
+        // override dynamicFee calculation as this is a zero-fee transaction
+        return Utils.BigNumber.ZERO;
     }
 
     public async bootstrap(connection: Database.IConnection, walletManager: State.IWalletManager): Promise<void> {
@@ -114,7 +119,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
     ): Promise<boolean> {
-        if (this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+        if (await this.typeFromSenderAlreadyInPool(data, pool, processor)) {
             return false;
         }
         return true;

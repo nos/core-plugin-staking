@@ -69,7 +69,6 @@ beforeEach(() => {
     // voter.nonce = Utils.BigNumber.ZERO;
     stakeCreateHandler = new StakeCreateTransactionHandler();
     stakeRedeemHandler = new StakeRedeemTransactionHandler();
-
 });
 
 describe("Staking Transactions", () => {
@@ -226,6 +225,8 @@ describe("Staking Transactions", () => {
             .nonce(voter.nonce.plus(1))
             .sign("secret")
             .build();
+
+            console.log(stakeTransaction.data.asset);
 
         await walletManager.applyTransaction(stakeTransaction).catch(error => {
             fail(error);
