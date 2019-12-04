@@ -57,10 +57,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                     stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2));
                     stakeObject.halved = true;
                 }
-                Object.assign(stakes, {
-                    ...stakes,
-                    [transaction.id]: stakeObject
-                });
+                stakes[transaction.id] = stakeObject;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stakeObject.weight);
                 wallet.setAttribute("stakeWeight", newWeight);
@@ -84,9 +81,10 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(data.asset.stakeCreate, transaction.id);
 
         const timestampDiff = stake.timestamp - lastBlock.data.timestamp;
+
         if (
             !transaction.timestamp &&
-            (timestampDiff > Managers.configManager.getMilestone().blocktime * 4 || timestampDiff < 0)
+            (timestampDiff > Managers.configManager.getMilestone().blocktime * 4 || timestampDiff < Managers.configManager.getMilestone().blocktime * -4)
         ) {
             throw new StakeTimestampError();
         }
@@ -120,6 +118,11 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         processor: TransactionPool.IProcessor,
     ): Promise<boolean> {
         if (await this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+            processor.pushError(
+                data,
+                "ERR_PENDING",
+                `Stake transaction from this wallet is already in the pool`,
+            );
             return false;
         }
         return true;
@@ -140,10 +143,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(o.weight);
         const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
 
-        Object.assign(stakes, {
-            ...stakes,
-            [transaction.id]: o,
-        });
+        stakes[transaction.id] = o;
 
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", stakes);
@@ -152,6 +152,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         await ExpireHelper.storeExpiry(o, sender, transaction.id);
 
         walletManager.reindex(sender);
+
     }
 
     public async revertForSender(
@@ -165,10 +166,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(o.weight);
         const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
 
-        Object.assign(stakes, {
-            ...stakes,
-            [transaction.id]: undefined,
-        });
+        delete stakes[transaction.id];
 
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", stakes);

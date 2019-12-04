@@ -1,7 +1,7 @@
-import { app } from '@arkecosystem/core-container';
-import { Database } from '@arkecosystem/core-interfaces';
-import { Identities, Managers, Utils } from '@arkecosystem/crypto';
-import { Builders as StakeBuilders } from '@nosplatform/stake-transactions-crypto';
+// import { app } from '@arkecosystem/core-container';
+// import { Database } from '@arkecosystem/core-interfaces';
+import { Managers, Utils } from '@arkecosystem/crypto';
+// import { Builders as StakeBuilders } from '@nosplatform/stake-transactions-crypto';
 import got from 'got';
 
 // import { TransactionFactory } from '../../../__tests__/helpers/transaction-factory';
@@ -9,7 +9,7 @@ import { secrets } from '../../../__tests__/utils/config/testnet/delegates.json'
 import * as support from './__support__';
 
 // import { Database } from '@arkecosystem/core-interfaces';
-// import { TransactionFactory as StakeTransactionFactory } from './__functional__/factory';
+import { TransactionFactory as StakeTransactionFactory } from './__functional__/factory';
 // const { passphrase } = support.passphrases;
 
 // import { generateMnemonic } from 'bip39';
@@ -20,60 +20,46 @@ afterAll(support.tearDown);
 describe("Transaction Forging - Stake create", () => {
     describe("Signed with 1 Passphrase", () => {
 
-        it("should accept, broadcast and forge it", async () => {
+        it("should create, halve, and redeem a stake", async () => {
+            let wallet;
 
             Managers.configManager.setFromPreset("testnet");
 
-            // Initial Funds
-            // const address = Identities.Address.fromPassphrase(secrets[0]);
-            // const initialFunds = TransactionFactory.transfer(address, 100000 * 1e8)
-            //     .withPassphrase(secrets[0])
-            //     .createOne();
 
-            // console.log(initialFunds);
+            const stakeCreate = StakeTransactionFactory
+                .stakeCreate(20, Utils.BigNumber.make(10_000).times(1e8))
+                .withPassphrase(secrets[0])
+                .createOne();
 
-            // const { body: body1 } = await got.post(`http://localhost:4003/api/v2/transactions`, {
-            //     body: JSON.stringify({ transactions: [initialFunds] }),
-            // });
+            await support.snoozeForBlock(1);
+            await expect(stakeCreate).toBeAccepted();
+            await support.snoozeForBlock(1);
+            await expect(stakeCreate.id).toBeForged();
 
-            // console.log(body1)
+            const stakeRedeem = StakeTransactionFactory
+                .stakeRedeem(stakeCreate.id)
+                .withPassphrase(secrets[0])
+                .createOne();
+            await expect(stakeRedeem).toBeRejected();
 
-            // await expect(initialFunds).toBeAccepted();
-            // await support.snoozeForBlock(1);
-            // await expect(initialFunds.id).toBeForged();
-            // await support.snoozeForBlock(1);
+            await support.snoozeForBlock(51);
 
-            const nonce = app.resolvePlugin<Database.IDatabaseService>("database").walletManager.getNonce(Identities.PublicKey.fromPassphrase(secrets[0]));
-            const stakeBuilder = new StakeBuilders.StakeCreateBuilder();
-            const stakeCreate = stakeBuilder
-                .stakeAsset(120, Utils.BigNumber.make(10000).times(1e8))
-                .nonce(nonce.plus(2).toString())
-                .sign(secrets[0])
-                .getStruct();
+            wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
+            expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].halved).toBeTrue();
 
-            console.log(stakeCreate);
+            const stakeRedeem2 = StakeTransactionFactory
+                .stakeRedeem(stakeCreate.id)
+                .withPassphrase(secrets[0])
+                .createOne();
 
-            const { body } = await got.post(`http://localhost:4003/api/v2/transactions`, {
-                body: JSON.stringify({ transactions: [stakeCreate] }),
-            });
-
-            console.log(body);
-
-            // expect(body).not.toBeNull();
+            await expect(stakeRedeem2).toBeAccepted();
             await support.snoozeForBlock(1);
 
-            // console.log(stakeCreate.asset);
-            // const myWallet = app.resolvePlugin<Database.IDatabaseService>("database").walletManager.findByAddress(wallet);
-            // console.log(myWallet);
+            wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
+            console.log(JSON.parse(wallet.body).data);
 
-            // const db = app.resolvePlugin<Database.IDatabaseService>('database');
-            // const lastBlock = await db.getLastBlock();
+            expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].redeemed).toBeTrue();
 
-            // console.log(lastBlock);
-
-            // await expect(stakeCreate).toBeAccepted();
-            // await support.snoozeForBlock(1);
-            // await expect(stakeCreate.id).toBeForged();
         });
 
         //     it("should be rejected, because wallet is already a business [Signed with 1 Passphrase]", async () => {

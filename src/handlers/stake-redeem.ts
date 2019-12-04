@@ -1,5 +1,5 @@
 import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
-import { Handlers, TransactionReader } from '@arkecosystem/core-transactions';
+import { Handlers, Interfaces as TransactionInterfaces, TransactionReader } from '@arkecosystem/core-transactions';
 import { Interfaces, Transactions, Utils } from '@arkecosystem/crypto';
 import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
 
@@ -23,6 +23,11 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         return true;
     }
 
+    public dynamicFee(context: TransactionInterfaces.IDynamicFeeContext): Utils.BigNumber {
+        // override dynamicFee calculation as this is a zero-fee transaction
+        return Utils.BigNumber.ZERO;
+    }
+
     public async bootstrap(connection: Database.IConnection, walletManager: State.IWalletManager): Promise<void> {
         const reader: TransactionReader = await TransactionReader.create(connection, this.getConstructor());
         // TODO: get milestone belonging to transaction block height
@@ -38,13 +43,8 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 const newBalance = wallet.balance.plus(stake.amount);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(stake.weight);
 
-                Object.assign(stakes, {
-                    ...stakes,
-                    [txId]: {
-                        ...stake,
-                        redeemed: true,
-                    },
-                });
+                stake.redeemed = true;
+                stakes[txId] = stake;
 
                 wallet.balance = newBalance;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
@@ -60,7 +60,6 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         databaseWalletManager: State.IWalletManager,
     ): Promise<void> {
         const sender = databaseWalletManager.findByPublicKey(wallet.publicKey);
-
         const stakes: StakeInterfaces.IStakeArray = sender.getAttribute("stakes", {});
 
         // Get wallet stake if it exists
@@ -95,7 +94,12 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
     ): Promise<boolean> {
-        if (this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+        if (await this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+            processor.pushError(
+                data,
+                "ERR_PENDING",
+                `Stake transaction from this wallet is already in the pool`,
+            );
             return false;
         }
         return true;
@@ -109,28 +113,22 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         transaction: Interfaces.ITransaction,
         walletManager: State.IWalletManager,
     ): Promise<void> {
-        super.applyToSender(transaction, walletManager);
-        // TODO: get milestone belonging to transaction block height
+        await super.applyToSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
         const t = transaction.data;
         const txId = t.asset.stakeRedeem.id;
         const stakes = sender.getAttribute("stakes", {});
         const stake = stakes[txId];
+
         // Refund stake
         const newBalance = sender.balance.plus(stake.amount);
-        const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(stake.weight);
-        Object.assign(stakes, {
-            ...stakes,
-            [txId]: {
-                ...stake,
-                redeemed: true,
-            },
-        });
+        const newWeight = sender.getAttribute("stakeWeight").minus(stake.weight);
+        stake.redeemed = true;
+        stakes[txId] = stake;
 
         sender.balance = newBalance;
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", stakes);
-
         walletManager.reindex(sender);
     }
 
@@ -147,13 +145,8 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         // Revert refund stake
         const newBalance = sender.balance.minus(stake.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stake.weight);
-        Object.assign(stakes, {
-            ...stakes,
-            [txId]: {
-                ...stake,
-                redeemed: false,
-            }
-        });
+        stake.redeemed = false;
+        stakes[txId] = stakes;
 
         sender.balance = newBalance;
         sender.setAttribute("stakeWeight", newWeight);

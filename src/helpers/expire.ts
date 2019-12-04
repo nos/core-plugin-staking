@@ -48,14 +48,9 @@ export class ExpireHelper {
             // Update voter total stakeWeight
             const newWalletStakeWeight = walletStakeWeight.plus(newStakeWeight);
 
-            Object.assign(stakes, {
-                ...stakes,
-                [stakeKey]: {
-                    ...stake,
-                    halved: true,
-                    weight: newStakeWeight,
-                },
-            });
+            stake.halved = true;
+            stake.weight = newStakeWeight;
+            stakes[stakeKey] = stake;
 
             wallet.setAttribute("stakeWeight", newWalletStakeWeight);
             wallet.setAttribute("stakes", stakes);
@@ -66,8 +61,8 @@ export class ExpireHelper {
 
             // Update delegate voteBalance
             if (delegate) {
-                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("voteBalance").plus(wallet.getAttribute("stakeWeight")));
-                poolDelegate.setAttribute("voteBalance", poolDelegate.getAttribute("voteBalance").plus(wallet.getAttribute("stakeWeight")));
+                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakeWeight")));
+                poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakeWeight")));
             }
 
 
@@ -75,8 +70,8 @@ export class ExpireHelper {
             const walletManager2 = poolService.walletManager;
             walletManager1.reindex(delegate);
             walletManager1.reindex(wallet);
-            walletManager2.reindex(walletManager2);
-            walletManager2.reindex(wallet);
+            walletManager2.reindex(poolDelegate);
+            walletManager2.reindex(poolWallet);
 
             this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block });
         }
@@ -128,10 +123,9 @@ export class ExpireHelper {
         if (expirationsCount > 0) {
             app.resolvePlugin("logger").info("Processing stake expirations.");
             for (const expiration of expirations) {
-                console.log(expiration.address);
                 const wallet = databaseService.walletManager.findByAddress(expiration.address);
-                console.log(expiration.stakeKey);
                 if (
+                    wallet.hasAttribute("stakes") &&
                     wallet.getAttribute("stakes")[expiration.stakeKey] !== undefined &&
                     wallet.getAttribute("stakes")[expiration.stakeKey].halved === false
                 ) {

@@ -20,9 +20,16 @@ export class TransactionFactory {
     ): TransactionFactory {
         const stakeBuilder = new StakeBuilders.StakeCreateBuilder;
         const builder = stakeBuilder
-            .stakeAsset(duration, amount)
-            .network(23);
+            .stakeAsset(duration, amount);
+        return new TransactionFactory(builder);
+    }
 
+    public static stakeRedeem(
+        stakeId: string,
+    ): TransactionFactory {
+        const stakeBuilder = new StakeBuilders.StakeRedeemBuilder;
+        const builder = stakeBuilder
+            .stakeAsset(stakeId);
         return new TransactionFactory(builder);
     }
 
