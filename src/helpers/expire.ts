@@ -18,8 +18,7 @@ export class ExpireHelper {
         stakeKey: string,
         block: Interfaces.IBlockData,
     ): Promise<void> {
-
-        const stakes: StakeInterfaces.IStakeArray = wallet.getAttribute("stakes");
+        const stakes: StakeInterfaces.IStakeArray = wallet.getAttribute("stakes", {});
         const stake: StakeInterfaces.IStakeObject = stakes[stakeKey];
 
         if (!stake.halved && !stake.redeemed && block.timestamp > stake.redeemableTimestamp) {
@@ -41,10 +40,11 @@ export class ExpireHelper {
                 delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO)));
                 poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO)));
             }
+
             // Deduct old stake object weight from voter stakeWeight
             const walletStakeWeight = wallet.getAttribute<Utils.BigNumber>("stakeWeight").minus(stake.weight);
             // Set new stake object weight
-            const newStakeWeight = Utils.BigNumber.make(stake.weight.dividedBy(2).toFixed());
+            const newStakeWeight = Utils.BigNumber.make(Utils.BigNumber.make(stake.weight).dividedBy(2).toFixed());
             // Update voter total stakeWeight
             const newWalletStakeWeight = walletStakeWeight.plus(newStakeWeight);
 
@@ -53,11 +53,11 @@ export class ExpireHelper {
             stakes[stakeKey] = stake;
 
             wallet.setAttribute("stakeWeight", newWalletStakeWeight);
-            wallet.setAttribute("stakes", stakes);
+            wallet.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
             const poolWallet = poolService.walletManager.findByPublicKey(wallet.publicKey);
             poolWallet.setAttribute("stakeWeight", newWalletStakeWeight);
-            poolWallet.setAttribute("stakes", stakes);
+            poolWallet.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
             // Update delegate voteBalance
             if (delegate) {

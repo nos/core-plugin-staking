@@ -47,7 +47,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 stakes[txId] = stake;
 
                 wallet.balance = newBalance;
-                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
+                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
                 wallet.setAttribute<Utils.BigNumber>("stakeWeight", newWeight);
                 walletManager.reindex(wallet);
             }
@@ -128,7 +128,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
 
         sender.balance = newBalance;
         sender.setAttribute("stakeWeight", newWeight);
-        sender.setAttribute("stakes", stakes);
+        sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         walletManager.reindex(sender);
     }
 
@@ -146,11 +146,11 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         const newBalance = sender.balance.minus(stake.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stake.weight);
         stake.redeemed = false;
-        stakes[txId] = stakes;
+        stakes[txId] = stake;
 
         sender.balance = newBalance;
         sender.setAttribute("stakeWeight", newWeight);
-        sender.setAttribute("stakes", stakes);
+        sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
         walletManager.reindex(sender);
     }
