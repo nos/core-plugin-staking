@@ -19,7 +19,6 @@ afterAll(support.tearDown);
 
 describe("Transaction Forging - Stake create", () => {
     describe("Signed with 1 Passphrase", () => {
-
         it("should create, halve, and redeem a stake", async () => {
             let wallet;
 
@@ -32,9 +31,16 @@ describe("Transaction Forging - Stake create", () => {
                 .createOne();
 
             await support.snoozeForBlock(1);
+
+            // Block 3
             await expect(stakeCreate).toBeAccepted();
+
             await support.snoozeForBlock(1);
+
+            // Block 4
             await expect(stakeCreate.id).toBeForged();
+            wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
+            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('2000000000000');
 
             const stakeRedeem = StakeTransactionFactory
                 .stakeRedeem(stakeCreate.id)
@@ -42,10 +48,14 @@ describe("Transaction Forging - Stake create", () => {
                 .createOne();
             await expect(stakeRedeem).toBeRejected();
 
-            await support.snoozeForBlock(51);
+            await support.snoozeForBlock(2);
 
+            // Block 6
             wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
             expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].halved).toBeTrue();
+            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('1000000000000');
+
+            console.log(JSON.parse(wallet.body).data);
 
             const stakeRedeem2 = StakeTransactionFactory
                 .stakeRedeem(stakeCreate.id)
@@ -55,11 +65,16 @@ describe("Transaction Forging - Stake create", () => {
             await expect(stakeRedeem2).toBeAccepted();
             await support.snoozeForBlock(1);
 
+            // Block 7
             wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
             console.log(JSON.parse(wallet.body).data);
 
             expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].redeemed).toBeTrue();
 
+            await expect(stakeRedeem2.id).toBeForged();
+            wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
+            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('0');
+            // expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].weight).toBe('0');
         });
 
         //     it("should be rejected, because wallet is already a business [Signed with 1 Passphrase]", async () => {

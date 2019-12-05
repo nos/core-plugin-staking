@@ -54,11 +54,11 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 const stakeObject: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
                 const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
-                    stakeObject.weight = Utils.BigNumber.make(stakeObject.weight.dividedBy(2));
+                    stakeObject.weight = Utils.BigNumber.make(stakeObject.weight).dividedBy(2);
                     stakeObject.halved = true;
                 }
                 stakes[transaction.id] = stakeObject;
-                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", stakes);
+                wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stakeObject.weight);
                 wallet.setAttribute("stakeWeight", newWeight);
                 walletManager.reindex(wallet);
@@ -145,8 +145,11 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
 
         stakes[transaction.id] = o;
 
+        console.log(stakes);
+        console.log(JSON.parse(JSON.stringify(stakes)));
+
         sender.setAttribute("stakeWeight", newWeight);
-        sender.setAttribute("stakes", stakes);
+        sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         sender.balance = newBalance;
 
         await ExpireHelper.storeExpiry(o, sender, transaction.id);
@@ -169,7 +172,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         delete stakes[transaction.id];
 
         sender.setAttribute("stakeWeight", newWeight);
-        sender.setAttribute("stakes", stakes);
+        sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         sender.balance = newBalance;
 
         await ExpireHelper.removeExpiry(o, sender, transaction.id);
