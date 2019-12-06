@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import cloneDeep from 'lodash.clonedeep';
 import * as path from 'path';
 
-import { secrets } from '../../../../__tests__/utils/config/testnet/delegates.json';
+import { secrets } from '../../../../__tests__/utils/config/nospluginnet/delegates.json';
 import { setUpContainer } from '../../../../__tests__/utils/helpers/container';
 
 jest.setTimeout(1200000);
@@ -17,7 +17,7 @@ let app: Container.IContainer;
 export const setUp = async (): Promise<void> => {
     try {
         process.env.CORE_RESET_DATABASE = "1";
-        const dbPath = path.resolve(__dirname, `../../../storage/databases/testnet.sqlite`);
+        const dbPath = path.resolve(__dirname, `../../../storage/databases/nospluginnet.sqlite`);
         if (fs.existsSync(dbPath)) {
             fs.unlinkSync(dbPath);
         }
@@ -37,7 +37,7 @@ export const setUp = async (): Promise<void> => {
                 "@arkecosystem/core-forger",
                 "@nosplatform/supply-tracker",
             ],
-            network: "testnet"
+            network: "nospluginnet"
         });
 
         const databaseService = app.resolvePlugin<Database.IDatabaseService>("database");
@@ -63,7 +63,7 @@ export const setUp = async (): Promise<void> => {
 };
 
 export const tearDown = async (): Promise<void> => {
-    const dbPath = path.resolve(__dirname, `../../../storage/databases/testnet.sqlite`);
+    const dbPath = path.resolve(__dirname, `../../../storage/databases/nospluginnet.sqlite`);
     if (fs.existsSync(dbPath)) {
         fs.unlinkSync(dbPath);
     }
