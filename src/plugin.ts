@@ -25,7 +25,8 @@ export const plugin: Container.IPluginDescriptor = {
         if (isNewRound) {
             q(async () => await StakeHelpers.ExpireHelper.processExpirations(block));
         }
-    });  },
+    });  
+  },
   async deregister(container: Container.IContainer, options) {
     container.resolvePlugin<Logger.ILogger>("logger").info("Deregistering Stake Create Transaction");
     Handlers.Registry.deregisterTransactionHandler(StakeCreateTransactionHandler);

@@ -3,7 +3,11 @@ import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/co
 import { Handlers, Interfaces as TransactionInterfaces, TransactionReader } from '@arkecosystem/core-transactions';
 import { roundCalculator } from '@arkecosystem/core-utils';
 import { Constants, Interfaces, Managers, Transactions, Utils } from '@arkecosystem/crypto';
-import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
+import {
+    Enums,
+    Interfaces as StakeInterfaces,
+    Transactions as StakeTransactions,
+} from '@nosplatform/stake-transactions-crypto';
 
 import {
     NotEnoughBalanceError,
@@ -117,11 +121,23 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
     ): Promise<boolean> {
-        if (await this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+        if (
+            await pool.senderHasTransactionsOfType(
+                data.senderPublicKey,
+                Enums.StakeTransactionType.StakeCreate,
+                Enums.StakeTransactionGroup,
+            )
+            ||
+            await pool.senderHasTransactionsOfType(
+                data.senderPublicKey,
+                Enums.StakeTransactionType.StakeRedeem,
+                Enums.StakeTransactionGroup,
+            )
+        ) {
             processor.pushError(
                 data,
                 "ERR_PENDING",
-                `Stake transaction from this wallet is already in the pool`,
+                `Stake transaction for wallet already in the pool`,
             );
             return false;
         }
@@ -142,11 +158,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         const newBalance = sender.balance.minus(o.amount);
         const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(o.weight);
         const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
-
         stakes[transaction.id] = o;
-
-        console.log(stakes);
-        console.log(JSON.parse(JSON.stringify(stakes)));
 
         sender.setAttribute("stakeWeight", newWeight);
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
