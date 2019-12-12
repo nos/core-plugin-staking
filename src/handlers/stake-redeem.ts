@@ -1,7 +1,11 @@
 import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
 import { Handlers, Interfaces as TransactionInterfaces, TransactionReader } from '@arkecosystem/core-transactions';
 import { Interfaces, Transactions, Utils } from '@arkecosystem/crypto';
-import { Interfaces as StakeInterfaces, Transactions as StakeTransactions } from '@nosplatform/stake-transactions-crypto';
+import {
+    Enums,
+    Interfaces as StakeInterfaces,
+    Transactions as StakeTransactions,
+} from '@nosplatform/stake-transactions-crypto';
 
 import { StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError } from '../errors';
 import { StakeCreateTransactionHandler } from './stake-create';
@@ -94,11 +98,23 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
     ): Promise<boolean> {
-        if (await this.typeFromSenderAlreadyInPool(data, pool, processor)) {
+        if (
+            await pool.senderHasTransactionsOfType(
+                data.senderPublicKey,
+                Enums.StakeTransactionType.StakeCreate,
+                Enums.StakeTransactionGroup,
+            )
+            ||
+            await pool.senderHasTransactionsOfType(
+                data.senderPublicKey,
+                Enums.StakeTransactionType.StakeRedeem,
+                Enums.StakeTransactionGroup,
+            )
+        ) {
             processor.pushError(
                 data,
                 "ERR_PENDING",
-                `Stake transaction from this wallet is already in the pool`,
+                `Stake transaction for wallet already in the pool`,
             );
             return false;
         }
