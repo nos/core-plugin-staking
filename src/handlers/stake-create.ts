@@ -15,6 +15,7 @@ import {
     StakeDurationError,
     StakeNotIntegerError,
     StakeTimestampError,
+    LessThanMinimumStakeError,
 } from '../errors';
 import { ExpireHelper, VoteWeight } from '../helpers';
 
@@ -111,6 +112,10 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
 
         if (!o.duration || milestone.stakeLevels[o.duration] === undefined) {
             throw new StakeDurationError();
+        }
+
+        if(o.amount.isLessThan(milestone.minimumStake)){
+            throw new LessThanMinimumStakeError();
         }
 
         return super.throwIfCannotBeApplied(transaction, wallet, databaseWalletManager);

@@ -60,3 +60,9 @@ export class StakeDurationError extends Errors.TransactionError {
         super(`Incorrect stake duration.`);
     }
 }
+
+export class LessThanMinimumStakeError extends Errors.TransactionError {
+    constructor() {
+        super(`Stake should be greater than allowed minimum.`);
+    }
+}
