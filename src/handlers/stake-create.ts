@@ -114,7 +114,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             throw new StakeDurationError();
         }
 
-        if(o.amount.isLessThan(milestone.minimumStake)){
+        if (o.amount.isLessThan(milestone.minimumStake)) {
             throw new LessThanMinimumStakeError();
         }
 
@@ -125,7 +125,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         data: Interfaces.ITransactionData,
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
-    ): Promise<boolean> {
+    ): Promise<{ type: string, message: string } | null> {
         if (
             await pool.senderHasTransactionsOfType(
                 data.senderPublicKey,
@@ -139,14 +139,12 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 Enums.StakeTransactionGroup,
             )
         ) {
-            processor.pushError(
-                data,
-                "ERR_PENDING",
-                `Stake transaction for wallet already in the pool`,
-            );
-            return false;
+            return {
+                type: "ERR_PENDING",
+                message: `Stake transaction for wallet already in the pool`,
+            };
         }
-        return true;
+        return null;
     }
 
     public emitEvents(transaction: Interfaces.ITransaction, emitter: EventEmitter.EventEmitter): void {

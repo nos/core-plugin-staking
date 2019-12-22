@@ -97,7 +97,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         data: Interfaces.ITransactionData,
         pool: TransactionPool.IConnection,
         processor: TransactionPool.IProcessor,
-    ): Promise<boolean> {
+    ): Promise<{ type: string, message: string } | null> {
         if (
             await pool.senderHasTransactionsOfType(
                 data.senderPublicKey,
@@ -111,14 +111,12 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 Enums.StakeTransactionGroup,
             )
         ) {
-            processor.pushError(
-                data,
-                "ERR_PENDING",
-                `Stake transaction for wallet already in the pool`,
-            );
-            return false;
+            return {
+                type: "ERR_PENDING",
+                message: `Stake transaction for wallet already in the pool`,
+            };
         }
-        return true;
+        return null;
     }
 
     public emitEvents(transaction: Interfaces.ITransaction, emitter: EventEmitter.EventEmitter): void {
