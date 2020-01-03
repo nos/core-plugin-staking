@@ -44,6 +44,7 @@ export class ExpireHelper {
             // Deduct old stake object weight from voter stakeWeight
             const walletStakeWeight = wallet.getAttribute<Utils.BigNumber>("stakeWeight").minus(stake.weight);
             // Set new stake object weight
+            const prevStakeWeight = stake.weight;
             const newStakeWeight = Utils.BigNumber.make(Utils.BigNumber.make(stake.weight).dividedBy(2).toFixed());
             // Update voter total stakeWeight
             const newWalletStakeWeight = walletStakeWeight.plus(newStakeWeight);
@@ -73,7 +74,7 @@ export class ExpireHelper {
             walletManager2.reindex(poolDelegate);
             walletManager2.reindex(poolWallet);
 
-            this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block });
+            this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block, prevStakeWeight });
         }
 
         // If the stake is somehow still unreleased, don't remove it from db
