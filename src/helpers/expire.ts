@@ -1,10 +1,8 @@
-import { LessThanOrEqual } from 'typeorm';
-
 import { app } from '@arkecosystem/core-container';
 import { Database, EventEmitter, State, TransactionPool } from '@arkecosystem/core-interfaces';
 import { Interfaces, Utils } from '@arkecosystem/crypto';
 import { Interfaces as StakeInterfaces } from '@nosplatform/stake-transactions-crypto';
-import { Stake } from '@nosplatform/storage';
+import { createHandyClient } from 'handy-redis';
 
 export interface IExpirationObject {
     publicKey: string;
@@ -79,7 +77,7 @@ export class ExpireHelper {
 
         // If the stake is somehow still unreleased, don't remove it from db
         if (!(block.timestamp <= stake.redeemableTimestamp)) {
-            this.removeExpiry(stake, wallet, stakeKey);
+            this.removeExpiry(stakeKey);
         }
 
     }
@@ -89,42 +87,40 @@ export class ExpireHelper {
         wallet: State.IWallet,
         stakeKey: string,
     ): Promise<void> {
-        const stakeModel = await Stake.findOne({
-            address: wallet.address,
-            redeemableTimestamp: stake.redeemableTimestamp,
-            stakeKey,
-        });
-        if (!stakeModel && !wallet.getAttribute("stakes")[stakeKey].halved) {
-            const stakeModel = new Stake();
-            stakeModel.stakeKey = stakeKey;
-            stakeModel.address = wallet.address;
-            stakeModel.redeemableTimestamp = stake.redeemableTimestamp;
-            await stakeModel.save();
+        const redis = createHandyClient();
+        const key = `stake:${stakeKey}`;
+        const exists = await redis.exists(key);
+        if (!exists) {
+            await redis.hmset(key, ['publicKey', wallet.publicKey], ['redeemableTimestamp', stake.redeemableTimestamp.toString()], ['stakeKey', stakeKey]);
+            await redis.zadd('stake_expirations', [stake.redeemableTimestamp, key]);
         }
     }
 
     public static async removeExpiry(
-        stake: StakeInterfaces.IStakeObject,
-        wallet: State.IWallet,
         stakeKey: string,
     ): Promise<void> {
-        const redeemableTimestamp = stake.redeemableTimestamp;
-        const stakeModel = await Stake.findOne({ address: wallet.address, redeemableTimestamp, stakeKey });
-        if (stakeModel) {
-            await stakeModel.remove();
-        }
+        const redis = createHandyClient();
+        const key = `stake:${stakeKey}`;
+        await redis.del(key);
+        await redis.zrem("stake_expirations", `stake:${stakeKey}`);
     }
 
     public static async processExpirations(block: Interfaces.IBlockData): Promise<void> {
+        const redis = createHandyClient();
         const databaseService: Database.IDatabaseService = app.resolvePlugin<Database.IDatabaseService>("database");
         const lastTime = block.timestamp;
-        const [expirations, expirationsCount] = await Stake.findAndCount({
-            where: { redeemableTimestamp: LessThanOrEqual(lastTime) },
-        });
+        const keys = await redis.zrangebyscore('stake_expirations', 0, lastTime);
+        const expirations = [];
+        let expirationsCount = 0;
+        for (const key of keys) {
+            const obj = await redis.hgetall(key);
+            expirations.push(obj);
+            expirationsCount++;
+        }
         if (expirationsCount > 0) {
             app.resolvePlugin("logger").info("Processing stake expirations.");
             for (const expiration of expirations) {
-                const wallet = databaseService.walletManager.findByAddress(expiration.address);
+                const wallet = databaseService.walletManager.findByPublicKey(expiration.publicKey);
                 if (
                     wallet.hasAttribute("stakes") &&
                     wallet.getAttribute("stakes")[expiration.stakeKey] !== undefined &&
@@ -137,7 +133,7 @@ export class ExpireHelper {
                     app.resolvePlugin("logger").info(
                         `Unknown or already processed ${expiration.stakeKey} of wallet ${wallet.address}. Deleted from storage.`,
                     );
-                    await expiration.remove();
+                    await this.removeExpiry(expiration.stakeKey);
                 }
             }
         }

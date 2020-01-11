@@ -61,6 +61,9 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
                     stakeObject.weight = Utils.BigNumber.make(stakeObject.weight).dividedBy(2);
                     stakeObject.halved = true;
+                    await ExpireHelper.removeExpiry(transaction.id);
+                }else{
+                    await ExpireHelper.storeExpiry(stakeObject, wallet, transaction.id);
                 }
                 stakes[transaction.id] = stakeObject;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
@@ -190,7 +193,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         sender.balance = newBalance;
 
-        await ExpireHelper.removeExpiry(o, sender, transaction.id);
+        await ExpireHelper.removeExpiry(transaction.id);
 
         walletManager.reindex(sender);
     }

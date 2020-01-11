@@ -7,7 +7,7 @@ import delay from 'delay';
 import * as fs from 'fs';
 import cloneDeep from 'lodash.clonedeep';
 import * as path from 'path';
-
+import { createHandyClient } from 'handy-redis';
 import { secrets } from '../../../../__tests__/utils/config/nospluginnet/delegates.json';
 import { setUpContainer } from '../../../../__tests__/utils/helpers/container';
 
@@ -21,6 +21,9 @@ export const setUp = async (): Promise<void> => {
         if (fs.existsSync(dbPath)) {
             fs.unlinkSync(dbPath);
         }
+
+        const redis = createHandyClient();
+        await redis.flushdb();
 
         app = await setUpContainer({
             include: [
@@ -70,7 +73,8 @@ export const tearDown = async (): Promise<void> => {
     const databaseService = app.resolvePlugin<Database.IDatabaseService>("database");
     await databaseService.reset();
     await app.tearDown();
-
+    const redis = createHandyClient();
+    await redis.flushdb();
 };
 
 export const snoozeForBlock = async (sleep: number = 0, height: number = 1): Promise<void> => {

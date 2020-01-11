@@ -9,6 +9,7 @@ import {
 
 import { StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError } from '../errors';
 import { StakeCreateTransactionHandler } from './stake-create';
+import { ExpireHelper } from '../helpers';
 
 export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
     public getConstructor(): Transactions.TransactionConstructor {
@@ -46,10 +47,9 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 const stake: StakeInterfaces.IStakeObject = stakes[txId];
                 const newBalance = wallet.balance.plus(stake.amount);
                 const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(stake.weight);
-
                 stake.redeemed = true;
                 stakes[txId] = stake;
-
+                await ExpireHelper.removeExpiry(transaction.id);
                 wallet.balance = newBalance;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
                 wallet.setAttribute<Utils.BigNumber>("stakeWeight", newWeight);
