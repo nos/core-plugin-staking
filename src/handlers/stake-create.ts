@@ -10,12 +10,12 @@ import {
 } from '@nosplatform/stake-transactions-crypto';
 
 import {
+    LessThanMinimumStakeError,
     NotEnoughBalanceError,
     StakeAlreadyExistsError,
     StakeDurationError,
     StakeNotIntegerError,
     StakeTimestampError,
-    LessThanMinimumStakeError,
 } from '../errors';
 import { ExpireHelper, VoteWeight } from '../helpers';
 

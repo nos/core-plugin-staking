@@ -5,9 +5,9 @@ import { Wallets } from '@arkecosystem/core-state';
 import { Crypto, Identities, Managers, Utils } from '@arkecosystem/crypto';
 import delay from 'delay';
 import * as fs from 'fs';
+import { createHandyClient } from 'handy-redis';
 import cloneDeep from 'lodash.clonedeep';
 import * as path from 'path';
-import { createHandyClient } from 'handy-redis';
 import { secrets } from '../../../../__tests__/utils/config/nospluginnet/delegates.json';
 import { setUpContainer } from '../../../../__tests__/utils/helpers/container';
 

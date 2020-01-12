@@ -2,11 +2,11 @@ import { app } from '@arkecosystem/core-container';
 import { Container, EventEmitter, Logger } from '@arkecosystem/core-interfaces';
 import { Handlers } from '@arkecosystem/core-transactions';
 import { roundCalculator } from '@arkecosystem/core-utils';
+import { createHandyClient } from 'handy-redis';
 import { defaults } from './defaults';
 import { StakeCreateTransactionHandler } from './handlers/stake-create';
 import { StakeRedeemTransactionHandler } from './handlers/stake-redeem';
 import * as StakeHelpers from './helpers';
-import { createHandyClient } from 'handy-redis';
 
 const emitter = app.resolvePlugin<EventEmitter.EventEmitter>("event-emitter");
 const redis = createHandyClient();
