@@ -40,7 +40,7 @@ beforeAll(async () => {
         synchronize: true,
     });
     Managers.configManager.setFromPreset("testnet");
-    Managers.configManager.setHeight(1);
+    Managers.configManager.setHeight(2);
     Handlers.Registry.registerTransactionHandler(StakeCreateTransactionHandler);
     Handlers.Registry.registerTransactionHandler(StakeRedeemTransactionHandler);
 });
@@ -304,9 +304,9 @@ describe("Staking Transactions", () => {
         );
         expect(voter.getAttribute("stakes")[stakeTransaction.id]).toEqual({
             id: stakeTransaction.id,
-            amount: stakeAmount,
+            amount: stakeAmount.toString(),
             duration: 7889400,
-            weight: stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10),
+            weight: stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10).toString(),
             redeemableTimestamp: stakeTransaction.data.asset.stakeCreate.timestamp + 7889400,
             redeemed: false,
             halved: false,

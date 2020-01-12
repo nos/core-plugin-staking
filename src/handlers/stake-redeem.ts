@@ -8,8 +8,8 @@ import {
 } from '@nosplatform/stake-transactions-crypto';
 
 import { StakeAlreadyRedeemedError, StakeNotFoundError, StakeNotYetRedeemableError, WalletHasNoStakeError } from '../errors';
-import { StakeCreateTransactionHandler } from './stake-create';
 import { ExpireHelper } from '../helpers';
+import { StakeCreateTransactionHandler } from './stake-create';
 
 export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
     public getConstructor(): Transactions.TransactionConstructor {

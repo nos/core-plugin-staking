@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "@nosplatform/stake-transactions",
   "description": "Provides stake transactions for Ark Core",
   "version": "0.0.2",
@@ -12,7 +11,7 @@
     "dist"
   ],
   "scripts": {
-    "prepublishOnly": "yarn test && yarn build",
+    "prepublishOnly": "yarn build",
     "pretest": "yarn lint && yarn build",
     "compile": "../../node_modules/typescript/bin/tsc",
     "build": "yarn clean && yarn compile",
@@ -20,7 +19,7 @@
     "clean": "del dist",
     "docs": "../../node_modules/typedoc/bin/typedoc src --out docs",
     "lint": "../../node_modules/tslint/bin/tslint -c ./tslint.json 'src/**/*.ts' '__tests__/**/*.ts' --fix",
-    "test": "cross-env CORE_ENV=test jest --runInBand --forceExit",
+    "test": "cross-env CORE_ENV=test jest --runInBand --forceExit --passWithNoTests",
     "test:coverage": "cross-env CORE_ENV=test jest --coverage --coveragePathIgnorePatterns='/(defaults.ts|index.ts)$' --runInBand --forceExit",
     "test:debug": "cross-env CORE_ENV=test node --inspect-brk ../../node_modules/.bin/jest --runInBand",
     "test:watch": "cross-env CORE_ENV=test jest --runInBand --watch",
@@ -31,10 +30,9 @@
     "@arkecosystem/core-interfaces": "^2.6.0-next.7",
     "@arkecosystem/core-transactions": "^2.6.0-next.7",
     "@arkecosystem/crypto": "^2.6.0-next.7",
-    "@nosplatform/stake-transactions-crypto": "^0.0.1",
-    "@nosplatform/storage": "^0.0.2",
-    "redis": "^2.8.0",
-    "handy-redis": "^1.7.0"
+    "@nosplatform/stake-transactions-crypto": "^0.1.0-alpha.3",
+    "handy-redis": "^1.7.0",
+    "redis": "^2.8.0"
   },
   "devDependencies": {
     "@sindresorhus/tsconfig": "^0.5.0",
@@ -46,13 +44,18 @@
     "jest-extended": "^0.11.2",
     "npm-check-updates": "^3.1.0",
     "regenerator-runtime": "^0.13.0",
-    "ts-jest": "^24.0.2",
+    "ts-jest": "^24.3.0",
     "tslint": "^5.12.0",
     "tslint-config-prettier": "^1.17.0",
     "typedoc": "^0.15.0",
     "typescript": "^3.2.4"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "jest": {
-    "preset": "../../jest-preset.json"
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    }
   }
 }
