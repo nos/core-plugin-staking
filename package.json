@@ -30,7 +30,7 @@
     "@arkecosystem/core-interfaces": "^2.6.0-next.7",
     "@arkecosystem/core-transactions": "^2.6.0-next.7",
     "@arkecosystem/crypto": "^2.6.0-next.7",
-    "@nosplatform/stake-transactions-crypto": "^0.1.0-alpha.3",
+    "@nosplatform/stake-transactions-crypto": "^0.1.0-alpha",
     "handy-redis": "^1.7.0",
     "redis": "^2.8.0"
   },
