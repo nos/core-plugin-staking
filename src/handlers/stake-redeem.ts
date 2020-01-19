@@ -46,13 +46,13 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
                 const stakes = wallet.getAttribute("stakes", {});
                 const stake: StakeInterfaces.IStakeObject = stakes[txId];
                 const newBalance = wallet.balance.plus(stake.amount);
-                const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(stake.weight);
+                const newPower = wallet.getAttribute("stakePower", Utils.BigNumber.ZERO).minus(stake.power);
                 stake.redeemed = true;
                 stakes[txId] = stake;
                 await ExpireHelper.removeExpiry(transaction.id);
                 wallet.balance = newBalance;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
-                wallet.setAttribute<Utils.BigNumber>("stakeWeight", newWeight);
+                wallet.setAttribute<Utils.BigNumber>("stakePower", newPower);
                 walletManager.reindex(wallet);
             }
         }
@@ -136,12 +136,12 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
 
         // Refund stake
         const newBalance = sender.balance.plus(stake.amount);
-        const newWeight = sender.getAttribute("stakeWeight").minus(stake.weight);
+        const newPower = sender.getAttribute("stakePower").minus(stake.power);
         stake.redeemed = true;
         stakes[txId] = stake;
 
         sender.balance = newBalance;
-        sender.setAttribute("stakeWeight", newWeight);
+        sender.setAttribute("stakePower", newPower);
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         walletManager.reindex(sender);
     }
@@ -158,12 +158,12 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         const stake = stakes[txId];
         // Revert refund stake
         const newBalance = sender.balance.minus(stake.amount);
-        const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stake.weight);
+        const newPower = sender.getAttribute("stakePower", Utils.BigNumber.ZERO).plus(stake.power);
         stake.redeemed = false;
         stakes[txId] = stake;
 
         sender.balance = newBalance;
-        sender.setAttribute("stakeWeight", newWeight);
+        sender.setAttribute("stakePower", newPower);
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
         walletManager.reindex(sender);

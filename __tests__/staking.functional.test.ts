@@ -31,7 +31,7 @@ describe("Transaction Forging - Stake create", () => {
             // Block 4
             await expect(stakeCreate.id).toBeForged();
             wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
-            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('2000000000000');
+            expect(JSON.parse(wallet.body).data.stakePower).toBe('2000000000000');
 
             const stakeRedeem = StakeTransactionFactory
                 .stakeRedeem(stakeCreate.id)
@@ -44,7 +44,7 @@ describe("Transaction Forging - Stake create", () => {
             // Block 6
             wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
             expect(JSON.parse(wallet.body).data.stakes[stakeCreate.id].halved).toBeTrue();
-            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('1000000000000');
+            expect(JSON.parse(wallet.body).data.stakePower).toBe('1000000000000');
 
             const stakeRedeem2 = StakeTransactionFactory
                 .stakeRedeem(stakeCreate.id)
@@ -61,7 +61,7 @@ describe("Transaction Forging - Stake create", () => {
 
             await expect(stakeRedeem2.id).toBeForged();
             wallet = await got.get('http://localhost:4003/api/v2/wallets/ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo');
-            expect(JSON.parse(wallet.body).data.stakeWeight).toBe('0');
+            expect(JSON.parse(wallet.body).data.stakePower).toBe('0');
 
             const stakeRedeem3 = StakeTransactionFactory
                 .stakeRedeem(stakeCreate.id)

@@ -152,7 +152,6 @@ describe("Staking Transactions", () => {
         } catch (error) {
             expect(error).toBeInstanceOf(Errors.TransactionSchemaError);
         }
-
     });
 
     it("should throw on invalid stake timestamp", async () => {
@@ -225,14 +224,11 @@ describe("Staking Transactions", () => {
             .nonce(voter.nonce.plus(1))
             .sign("secret")
             .build();
-
-            console.log(stakeTransaction.data.asset);
-
         await walletManager.applyTransaction(stakeTransaction).catch(error => {
             fail(error);
         });
 
-        expect(voter.getAttribute("stakeWeight")).toEqual(stakeAmount.times(configManager.getMilestone().stakeLevels['15778800']).dividedBy(10));
+        expect(voter.getAttribute("stakePower")).toEqual(stakeAmount.times(configManager.getMilestone().stakeLevels['15778800']).dividedBy(10));
 
 
         walletManager.reindex(delegateWallet);
@@ -240,7 +236,7 @@ describe("Staking Transactions", () => {
         expect(delegateWallet.getAttribute<Utils.BigNumber>("delegate.voteBalance")).toEqual(
             delegateWallet.balance
                 .plus(voter.balance)
-                .plus(voter.getAttribute("stakeWeight")),
+                .plus(voter.getAttribute("stakePower")),
         );
     });
 
@@ -264,7 +260,7 @@ describe("Staking Transactions", () => {
 
         await walletManager.applyTransaction(voteTransaction);
 
-        expect(voter.getAttribute("stakeWeight", Utils.BigNumber.ZERO)).toEqual(Utils.BigNumber.ZERO);
+        expect(voter.getAttribute("stakePower", Utils.BigNumber.ZERO)).toEqual(Utils.BigNumber.ZERO);
         expect(delegateWallet.getAttribute<Utils.BigNumber>("delegate.voteBalance")).toEqual(delegateWallet.balance.plus(voter.balance));
 
         const stakeBuilder = new StakeBuilders.StakeCreateBuilder;
@@ -276,7 +272,7 @@ describe("Staking Transactions", () => {
 
         await walletManager.applyTransaction(stakeTransaction);
 
-        expect(voter.getAttribute("stakeWeight", Utils.BigNumber.ZERO)).toEqual(stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10));
+        expect(voter.getAttribute("stakePower", Utils.BigNumber.ZERO)).toEqual(stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10));
 
         expect(voter.balance).toEqual(
             initialBalance
@@ -288,7 +284,7 @@ describe("Staking Transactions", () => {
             delegateWallet.balance
 
                 .plus(voter.balance)
-                .plus(voter.getAttribute("stakeWeight")),
+                .plus(voter.getAttribute("stakePower")),
         );
         expect(voter.balance).toEqual(
             Utils.BigNumber.make(initialBalance)
@@ -300,13 +296,13 @@ describe("Staking Transactions", () => {
             delegateWallet.balance
 
                 .plus(voter.balance)
-                .plus(voter.getAttribute("stakeWeight")),
+                .plus(voter.getAttribute("stakePower")),
         );
         expect(voter.getAttribute("stakes")[stakeTransaction.id]).toEqual({
             id: stakeTransaction.id,
             amount: stakeAmount.toString(),
             duration: 7889400,
-            weight: stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10).toString(),
+            power: stakeAmount.times(configManager.getMilestone().stakeLevels['7889400']).dividedBy(10).toString(),
             redeemableTimestamp: stakeTransaction.data.asset.stakeCreate.timestamp + 7889400,
             redeemed: false,
             halved: false,
@@ -340,7 +336,7 @@ describe("Staking Transactions", () => {
         ]);
 
         await walletManager.revertTransaction(stakeTransaction);
-        expect(voter.getAttribute("stakeWeight", Utils.BigNumber.ZERO)).toEqual(Utils.BigNumber.ZERO);
+        expect(voter.getAttribute("stakePower", Utils.BigNumber.ZERO)).toEqual(Utils.BigNumber.ZERO);
         expect(voter.balance).toEqual(initialBalance.minus(voteTransaction.data.fee));
         expect(delegateWallet.getAttribute<Utils.BigNumber>("delegate.voteBalance")).toEqual(delegateWallet.balance.plus(voter.balance));
 

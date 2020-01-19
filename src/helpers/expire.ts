@@ -33,35 +33,35 @@ export class ExpireHelper {
                 delegate = databaseService.walletManager.findByPublicKey(wallet.getAttribute("vote"));
                 poolDelegate = poolService.walletManager.findByPublicKey(wallet.getAttribute("vote"));
             }
-            // First deduct previous stakeWeight from from delegate voteBalance
+            // First deduct previous stakePower from from delegate voteBalance
             if (delegate) {
-                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO)));
-                poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO)));
+                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakePower", Utils.BigNumber.ZERO)));
+                poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").minus(wallet.getAttribute("stakePower", Utils.BigNumber.ZERO)));
             }
 
-            // Deduct old stake object weight from voter stakeWeight
-            const walletStakeWeight = wallet.getAttribute<Utils.BigNumber>("stakeWeight").minus(stake.weight);
-            // Set new stake object weight
-            const prevStakeWeight = stake.weight;
-            const newStakeWeight = Utils.BigNumber.make(Utils.BigNumber.make(stake.weight).dividedBy(2).toFixed());
-            // Update voter total stakeWeight
-            const newWalletStakeWeight = walletStakeWeight.plus(newStakeWeight);
+            // Deduct old stake object power from voter stakePower
+            const walletStakePower = wallet.getAttribute<Utils.BigNumber>("stakePower").minus(stake.power);
+            // Set new stake object power
+            const prevStakePower = stake.power;
+            const newStakePower = Utils.BigNumber.make(Utils.BigNumber.make(stake.power).dividedBy(2).toFixed());
+            // Update voter total stakePower
+            const newWalletStakePower = walletStakePower.plus(newStakePower);
 
             stake.halved = true;
-            stake.weight = newStakeWeight;
+            stake.power = newStakePower;
             stakes[stakeKey] = stake;
 
-            wallet.setAttribute("stakeWeight", newWalletStakeWeight);
+            wallet.setAttribute("stakePower", newWalletStakePower);
             wallet.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
             const poolWallet = poolService.walletManager.findByPublicKey(wallet.publicKey);
-            poolWallet.setAttribute("stakeWeight", newWalletStakeWeight);
+            poolWallet.setAttribute("stakePower", newWalletStakePower);
             poolWallet.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
 
             // Update delegate voteBalance
             if (delegate) {
-                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakeWeight")));
-                poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakeWeight")));
+                delegate.setAttribute("delegate.voteBalance", delegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakePower")));
+                poolDelegate.setAttribute("delegate.voteBalance", poolDelegate.getAttribute("delegate.voteBalance").plus(wallet.getAttribute("stakePower")));
             }
 
 
@@ -72,7 +72,7 @@ export class ExpireHelper {
             walletManager2.reindex(poolDelegate);
             walletManager2.reindex(poolWallet);
 
-            this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block, prevStakeWeight });
+            this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block, prevStakePower });
         }
 
         // If the stake is somehow still unreleased, don't remove it from db

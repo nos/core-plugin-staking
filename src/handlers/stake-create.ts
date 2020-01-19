@@ -17,7 +17,7 @@ import {
     StakeNotIntegerError,
     StakeTimestampError,
 } from '../errors';
-import { ExpireHelper, VoteWeight } from '../helpers';
+import { ExpireHelper, VotePower } from '../helpers';
 
 export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     public getConstructor(): Transactions.TransactionConstructor {
@@ -29,7 +29,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     }
 
     public walletAttributes(): ReadonlyArray<string> {
-        return ["stakes", "stakeWeight"];
+        return ["stakes", "stakePower"];
     }
 
     public async isActivated(): Promise<boolean> {
@@ -56,10 +56,10 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             const transactions = await reader.read();
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
-                const stakeObject: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.asset.stakeCreate, transaction.id);
+                const stakeObject: StakeInterfaces.IStakeObject = VotePower.stakeObject(transaction.asset.stakeCreate, transaction.id);
                 const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
-                    stakeObject.weight = Utils.BigNumber.make(stakeObject.weight).dividedBy(2);
+                    stakeObject.power = Utils.BigNumber.make(stakeObject.power).dividedBy(2);
                     stakeObject.halved = true;
                     await ExpireHelper.removeExpiry(transaction.id);
                 }else{
@@ -67,8 +67,8 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
                 }
                 stakes[transaction.id] = stakeObject;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
-                const newWeight = wallet.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(stakeObject.weight);
-                wallet.setAttribute("stakeWeight", newWeight);
+                const newPower = wallet.getAttribute("stakePower", Utils.BigNumber.ZERO).plus(stakeObject.power);
+                wallet.setAttribute("stakePower", newPower);
                 walletManager.reindex(wallet);
             }
         }
@@ -86,7 +86,7 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             .getLastBlock();
 
         const { data }: Interfaces.ITransaction = transaction;
-        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VotePower.stakeObject(data.asset.stakeCreate, transaction.id);
 
         const timestampDiff = stake.timestamp - lastBlock.data.timestamp;
 
@@ -160,13 +160,13 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     ): Promise<void> {
         await super.applyToSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
-        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VotePower.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.minus(o.amount);
-        const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).plus(o.weight);
+        const newPower = sender.getAttribute("stakePower", Utils.BigNumber.ZERO).plus(o.power);
         const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
         stakes[transaction.id] = o;
 
-        sender.setAttribute("stakeWeight", newWeight);
+        sender.setAttribute("stakePower", newPower);
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         sender.balance = newBalance;
 
@@ -182,14 +182,14 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
     ): Promise<void> {
         await super.revertForSender(transaction, walletManager);
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
-        const o: StakeInterfaces.IStakeObject = VoteWeight.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
+        const o: StakeInterfaces.IStakeObject = VotePower.stakeObject(transaction.data.asset.stakeCreate, transaction.id);
         const newBalance = sender.balance.plus(o.amount);
-        const newWeight = sender.getAttribute("stakeWeight", Utils.BigNumber.ZERO).minus(o.weight);
+        const newPower = sender.getAttribute("stakePower", Utils.BigNumber.ZERO).minus(o.power);
         const stakes = sender.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
 
         delete stakes[transaction.id];
 
-        sender.setAttribute("stakeWeight", newWeight);
+        sender.setAttribute("stakePower", newPower);
         sender.setAttribute("stakes", JSON.parse(JSON.stringify(stakes)));
         sender.balance = newBalance;
 

@@ -1,2 +1,2 @@
-export * from "./weight";
+export * from "./power";
 export * from "./expire";
