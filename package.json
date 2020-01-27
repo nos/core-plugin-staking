@@ -27,10 +27,10 @@
     "updates": "../../node_modules/npm-check-updates/bin/npm-check-updates -a"
   },
   "dependencies": {
-    "@arkecosystem/core-interfaces": "^2.6.0-next.7",
-    "@arkecosystem/core-transactions": "^2.6.0-next.7",
-    "@arkecosystem/crypto": "^2.6.0-next.7",
-    "@nosplatform/stake-transactions-crypto": "^0.1.0-alpha.3",
+    "@arkecosystem/core-interfaces": "^2.6.0-next.9",
+    "@arkecosystem/core-transactions": "^2.6.0-next.9",
+    "@arkecosystem/crypto": "^2.6.0-next.9",
+    "@nosplatform/stake-transactions-crypto": "^0.1.0-alpha.6",
     "handy-redis": "^1.7.0",
     "redis": "^2.8.0"
   },
