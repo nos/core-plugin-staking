@@ -63,8 +63,7 @@ export class StakeRedeemTransactionHandler extends Handlers.TransactionHandler {
         wallet: State.IWallet,
         databaseWalletManager: State.IWalletManager,
     ): Promise<void> {
-        const sender = databaseWalletManager.findByPublicKey(wallet.publicKey);
-        const stakes: StakeInterfaces.IStakeArray = sender.getAttribute("stakes", {});
+        const stakes: StakeInterfaces.IStakeArray = wallet.getAttribute("stakes", {});
 
         // Get wallet stake if it exists
         if (stakes === {}) {

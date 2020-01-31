@@ -57,14 +57,16 @@ export class StakeCreateTransactionHandler extends Handlers.TransactionHandler {
             for (const transaction of transactions) {
                 const wallet: State.IWallet = walletManager.findByPublicKey(transaction.senderPublicKey);
                 const stakeObject: StakeInterfaces.IStakeObject = VotePower.stakeObject(transaction.asset.stakeCreate, transaction.id);
+                const newBalance = wallet.balance.minus(stakeObject.amount);
                 const stakes = wallet.getAttribute<StakeInterfaces.IStakeArray>("stakes", {});
                 if (roundBlock.timestamp > stakeObject.redeemableTimestamp) {
                     stakeObject.power = Utils.BigNumber.make(stakeObject.power).dividedBy(2);
                     stakeObject.halved = true;
                     await ExpireHelper.removeExpiry(transaction.id);
-                }else{
+                } else {
                     await ExpireHelper.storeExpiry(stakeObject, wallet, transaction.id);
                 }
+                wallet.balance = newBalance;
                 stakes[transaction.id] = stakeObject;
                 wallet.setAttribute<StakeInterfaces.IStakeArray>("stakes", JSON.parse(JSON.stringify(stakes)));
                 const newPower = wallet.getAttribute("stakePower", Utils.BigNumber.ZERO).plus(stakeObject.power);
