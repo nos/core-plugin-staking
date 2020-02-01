@@ -123,7 +123,7 @@ export class ExpireHelper {
             const databaseService: Database.IDatabaseService = app.resolvePlugin<Database.IDatabaseService>("database");
 
             for (const expiration of expirations) {
-                if (expiration.publicKey) {
+                if (expiration && expiration.publicKey) {
                     const wallet = databaseService.walletManager.findByPublicKey(expiration.publicKey);
                     if (
                         wallet.hasAttribute("stakes") &&
@@ -139,9 +139,8 @@ export class ExpireHelper {
                         );
                         await this.removeExpiry(expiration.stakeKey);
                     }
-                } else {
-                    if (expiration.stakeKey)
-                        await this.removeExpiry(expiration.stakeKey);
+                } else if (expiration && expiration.stakeKey) {
+                    await this.removeExpiry(expiration.stakeKey);
                 }
             }
         }
