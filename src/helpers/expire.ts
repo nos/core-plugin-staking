@@ -68,10 +68,13 @@ export class ExpireHelper {
 
             const walletManager1 = databaseService.walletManager;
             const walletManager2 = poolService.walletManager;
-            walletManager1.reindex(delegate);
             walletManager1.reindex(wallet);
-            walletManager2.reindex(poolDelegate);
             walletManager2.reindex(poolWallet);
+
+            if (delegate) {
+                walletManager1.reindex(delegate);
+                walletManager2.reindex(poolDelegate);
+            }
 
             this.emitter.emit("stake.released", { publicKey: wallet.publicKey, stakeKey, block, prevStakePower });
         }
